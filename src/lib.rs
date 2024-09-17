@@ -1,5 +1,5 @@
 mod call;
-mod message;
+pub mod message;
 pub mod twiml;
 mod webhook;
 
@@ -80,19 +80,11 @@ impl Client {
         }
     }
 
-    async fn send_request<T>(
-        &self,
-        method: hyper::Method,
-        endpoint: &str,
-        params: &[(&str, &str)],
-    ) -> Result<T, TwilioError>
+    async fn send_request<T>(&self, method: hyper::Method, endpoint: &str, params: &[(&str, &str)]) -> Result<T, TwilioError>
     where
         T: serde::de::DeserializeOwned,
     {
-        let url = format!(
-            "https://api.twilio.com/2010-04-01/Accounts/{}/{}.json",
-            self.account_id, endpoint
-        );
+        let url = format!("https://api.twilio.com/2010-04-01/Accounts/{}/{}.json", self.account_id, endpoint);
         let mut req = hyper::Request::builder()
             .method(method)
             .uri(&*url)
@@ -103,11 +95,7 @@ impl Client {
         req.headers_mut().typed_insert(ContentType::from(mime));
         req.headers_mut().typed_insert(self.auth_header.clone());
 
-        let resp = self
-            .http_client
-            .request(req)
-            .await
-            .map_err(TwilioError::NetworkError)?;
+        let resp = self.http_client.request(req).await.map_err(TwilioError::NetworkError)?;
 
         match resp.status() {
             StatusCode::CREATED | StatusCode::OK => {}
@@ -117,18 +105,12 @@ impl Client {
         let decoded: T = hyper::body::to_bytes(resp.into_body())
             .await
             .map_err(TwilioError::NetworkError)
-            .and_then(|bytes| {
-                serde_json::from_slice(&bytes).map_err(|_| TwilioError::ParsingError)
-            })?;
+            .and_then(|bytes| serde_json::from_slice(&bytes).map_err(|_| TwilioError::ParsingError))?;
 
         Ok(decoded)
     }
 
-    pub async fn respond_to_webhook<T: FromMap, F>(
-        &self,
-        req: hyper::Request<Body>,
-        mut logic: F,
-    ) -> hyper::Response<Body>
+    pub async fn respond_to_webhook<T: FromMap, F>(&self, req: hyper::Request<Body>, mut logic: F) -> hyper::Response<Body>
     where
         F: FnMut(T) -> twiml::Twiml,
     {
