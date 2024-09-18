@@ -1,4 +1,4 @@
-mod call;
+pub mod call;
 pub mod message;
 pub mod twiml;
 mod webhook;
