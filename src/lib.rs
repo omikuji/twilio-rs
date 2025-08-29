@@ -1,5 +1,5 @@
-mod call;
-mod message;
+pub mod call;
+pub mod message;
 pub mod twiml;
 mod webhook;
 
